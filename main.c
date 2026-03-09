@@ -3411,8 +3411,8 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 									+ (buf_rec[4] << 8) + (buf_rec[5] << 16)
 									+ (buf_rec[6] << 24)) / 160;
 
-							TA531_RC1.TA531_RC_X_act = (MotorCtrl_M1.M_Position
-									- 10);
+							TA531_RC1.TA531_RC_X_act = XmaxLimit
+									- (MotorCtrl_M1.M_Position - 10);
 						}
 
 						if ((buf_rec[7] >> 4) > 0)	//
@@ -3459,8 +3459,8 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 									+ (buf_rec[4] << 8) + (buf_rec[5] << 16)
 									+ (buf_rec[6] << 24)) / 160;
 
-							TA531_RC1.TA531_RC_Y_act = (MotorCtrl_M3.M_Position
-									- 10);
+							TA531_RC1.TA531_RC_Y_act = YmaxLimit
+									- (MotorCtrl_M3.M_Position - 10);
 						}
 
 						if ((buf_rec[7] >> 4) > 0)	//
@@ -4660,7 +4660,7 @@ void MotoCtrl_PositionLoop(int PositionX_mm, int PositionY_mm) {
 	MotorCtrl_M3.MotorCtrl_FuncType = 0x01;
 	MotorCtrl_M3.MotorCtrl_FuncCode = 0x02;
 	MotorCtrl_M3.MotorCtrl_ByteData = 0x01;		//06/07
-	MotorCtrl_M3.MotorCtrl_DataCode = (PositionY_mm + 10) * 160;
+	MotorCtrl_M3.MotorCtrl_DataCode = ((YmaxLimit - PositionY_mm) + 10) * 160;
 
 	MotoCtrl_PackSend3();
 
@@ -4668,13 +4668,13 @@ void MotoCtrl_PositionLoop(int PositionX_mm, int PositionY_mm) {
 	MotorCtrl_M1.MotorCtrl_FuncType = 0x01;
 	MotorCtrl_M1.MotorCtrl_FuncCode = 0x02;
 	MotorCtrl_M1.MotorCtrl_ByteData = 0x01;		//06/07
-	MotorCtrl_M1.MotorCtrl_DataCode = (PositionX_mm + 10) * 160;
+	MotorCtrl_M1.MotorCtrl_DataCode = ((XmaxLimit - PositionX_mm) + 10) * 160;
 
 	MotorCtrl_M2.MotorCtrl_HostID = HostID;
 	MotorCtrl_M2.MotorCtrl_FuncType = 0x01;
 	MotorCtrl_M2.MotorCtrl_FuncCode = 0x02;
 	MotorCtrl_M2.MotorCtrl_ByteData = 0x01;		//06/07
-	MotorCtrl_M2.MotorCtrl_DataCode = (PositionX_mm + 10) * 160;
+	MotorCtrl_M2.MotorCtrl_DataCode = ((XmaxLimit - PositionX_mm) + 10) * 160;
 
 	MotoCtrl_PackSend12();
 
