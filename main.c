@@ -4526,27 +4526,6 @@ void MoC_Init() {
 				    OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "WriteFlash OK!");
 				}
 
-				SPI_Flash_ReadBytes(temp1, Sys_Addr_DispY1, sizeof(int));
-				if ((temp1[0] != ScreenSz_1.DispY1[0])
-						| (temp1[1] != ScreenSz_1.DispY1[1])
-						| (temp1[2] != ScreenSz_1.DispY1[2])
-						| (temp1[3] != ScreenSz_1.DispY1[3])) {
-					OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1,
-							"WriteFlash Err!");
-					while ((temp1[0] != ScreenSz_1.DispY1[0])
-							| (temp1[1] != ScreenSz_1.DispY1[1])
-							| (temp1[2] != ScreenSz_1.DispY1[2])
-							| (temp1[3] != ScreenSz_1.DispY1[3])) {
-						SPI_Flash_WriteSomeBytes(ScreenSz_1.DispY1,
-								Sys_Addr_DispY1, sizeof(int));
-						HAL_Delay(1);
-						SPI_Flash_ReadBytes(temp1, Sys_Addr_DispY1,
-								sizeof(int));
-					}
-					OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1,
-							"WriteFlash OK!");
-				}
-
 				////push down
 
 				////Display Area reset finish		//DispX0,DispX1,DispY0,DispY1;
