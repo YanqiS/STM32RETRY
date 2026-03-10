@@ -3396,7 +3396,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 									+ (buf_rec[4] << 8) + (buf_rec[5] << 16)
 									+ (buf_rec[6] << 24)) / 160;
 
-							TA531_RC1.TA531_RC_X_act = MotorCtrl_M1.M_Position
+							TA531_RC1.TA531_RC_X_act = -MotorCtrl_M1.M_Position
 									- 10;
 						}
 
@@ -3444,7 +3444,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 									+ (buf_rec[4] << 8) + (buf_rec[5] << 16)
 									+ (buf_rec[6] << 24)) / 160;
 
-							TA531_RC1.TA531_RC_Y_act = MotorCtrl_M3.M_Position
+							TA531_RC1.TA531_RC_Y_act = -MotorCtrl_M3.M_Position
 									- 10;
 						}
 
