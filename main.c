@@ -792,55 +792,80 @@ int main(void)
 
 
 
-	uint8_t temp1[4],temp2[4];
-	temp1[0] = 123;
-	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test");
-//	while( HAL_GPIO_ReadPin(ESP_TRG_STM_GPIO_Port,ESP_TRG_STM_Pin) )
-//	{
-//		SPI_Stop(Flash_SPI);
-//		HAL_GPIO_WritePin(STM2ESP_GPIO_Port, STM2ESP_Pin, 0);
-//		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test ...");
-//	}
-//	HAL_GPIO_WritePin(STM2ESP_GPIO_Port, STM2ESP_Pin, 0);	//#define STM2ESP_Pin GPIO_PIN_14		#define STM2ESP_GPIO_Port GPIOE
+	uint8_t flash_x0[4] = {0}, flash_y0[4] = {0}, flash_x1[4] = {0}, flash_y1[4] = {0};
+	uint8_t target_x0[4] = {50, 0, 0, 0};
+	uint8_t target_y0[4] = {50, 0, 0, 0};
+	uint8_t target_x1[4] = {100, 0, 0, 0};
+	uint8_t target_y1[4] = {100, 0, 0, 0};
+	uint8_t clear_ff[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
-//	SPI_Stop(Flash_SPI);
-//	HAL_Delay(5);
-//
+	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Check");
 	SPI_Flash_Start(Flash_SPI);
 	HAL_Delay(5);
 
-	SPI_Flash_WtritEnable();
-	HAL_Delay(5);
-	SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
-	HAL_Delay(5);
-	SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
-	while(temp1[0] != temp2[0])
+	SPI_Flash_ReadBytes(flash_x0, Sys_Addr_DispX0, sizeof(int));
+	SPI_Flash_ReadBytes(flash_y0, Sys_Addr_DispY0, sizeof(int));
+	SPI_Flash_ReadBytes(flash_x1, Sys_Addr_DispX1, sizeof(int));
+	SPI_Flash_ReadBytes(flash_y1, Sys_Addr_DispY1, sizeof(int));
+
+	bool already_target = (flash_x0[0] == 50 && flash_x0[1] == 0 && flash_x0[2] == 0 && flash_x0[3] == 0)
+			&& (flash_y0[0] == 50 && flash_y0[1] == 0 && flash_y0[2] == 0 && flash_y0[3] == 0)
+			&& (flash_x1[0] == 100 && flash_x1[1] == 0 && flash_x1[2] == 0 && flash_x1[3] == 0)
+			&& (flash_y1[0] == 100 && flash_y1[1] == 0 && flash_y1[2] == 0 && flash_y1[3] == 0);
+
+	if (already_target)
 	{
-		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test Err..");
+		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY OK!");
+	}
+	else
+	{
+		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Rewrite");
 
-		SPI_Stop(Flash_SPI);
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispX0, sizeof(int));
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispY0, sizeof(int));
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispX1, sizeof(int));
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispY1, sizeof(int));
+
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(target_x0, Sys_Addr_DispX0, sizeof(int));
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(target_y0, Sys_Addr_DispY0, sizeof(int));
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(target_x1, Sys_Addr_DispX1, sizeof(int));
+		SPI_Flash_WtritEnable();
+		HAL_Delay(5);
+		SPI_Flash_WriteSomeBytes(target_y1, Sys_Addr_DispY1, sizeof(int));
 		HAL_Delay(5);
 
-		SPI_Flash_Start(Flash_SPI);
-		HAL_Delay(5);
+		SPI_Flash_ReadBytes(flash_x0, Sys_Addr_DispX0, sizeof(int));
+		SPI_Flash_ReadBytes(flash_y0, Sys_Addr_DispY0, sizeof(int));
+		SPI_Flash_ReadBytes(flash_x1, Sys_Addr_DispX1, sizeof(int));
+		SPI_Flash_ReadBytes(flash_y1, Sys_Addr_DispY1, sizeof(int));
 
-		SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
-		HAL_Delay(5);
-		SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
-
-
-		itoa(temp1[0],str1,16);
-		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 2, str1);
-		itoa(temp1[1],str1,16);
-		OLED_ShowString(OLED_I2C_ch ,OLED_type,4, 2, str1);
-		itoa(temp2[0],str1,16);
-		OLED_ShowString(OLED_I2C_ch ,OLED_type,8, 2, str1);
-		itoa(temp2[1],str1,16);
-		OLED_ShowString(OLED_I2C_ch ,OLED_type,12, 2, str1);
+		if ((flash_x0[0] == 50 && flash_x0[1] == 0 && flash_x0[2] == 0 && flash_x0[3] == 0)
+				&& (flash_y0[0] == 50 && flash_y0[1] == 0 && flash_y0[2] == 0 && flash_y0[3] == 0)
+				&& (flash_x1[0] == 100 && flash_x1[1] == 0 && flash_x1[2] == 0 && flash_x1[3] == 0)
+				&& (flash_y1[0] == 100 && flash_y1[1] == 0 && flash_y1[2] == 0 && flash_y1[3] == 0))
+		{
+			OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY OK!");
+		}
+		else
+		{
+			OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Err!");
+		}
 	}
 
-
-	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test OK!");
 	HAL_Delay(1000);
 
 	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "UniqID:");
