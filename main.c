@@ -792,76 +792,43 @@ int main(void)
 
 
 
-	uint8_t flash_x0[4] = {0}, flash_y0[4] = {0}, flash_x1[4] = {0}, flash_y1[4] = {0};
-	uint8_t target_x0[4] = {50, 0, 0, 0};
-	uint8_t target_y0[4] = {50, 0, 0, 0};
-	uint8_t target_x1[4] = {100, 0, 0, 0};
-	uint8_t target_y1[4] = {100, 0, 0, 0};
+	uint8_t temp1[4],temp2[4];
+	temp1[0] = 123;
+	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test");
 
-	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Check");
 	SPI_Flash_Start(Flash_SPI);
 	HAL_Delay(5);
 
-	SPI_Flash_ReadBytes(flash_x0, Sys_Addr_DispX0, sizeof(int));
-	SPI_Flash_ReadBytes(flash_y0, Sys_Addr_DispY0, sizeof(int));
-	SPI_Flash_ReadBytes(flash_x1, Sys_Addr_DispX1, sizeof(int));
-	SPI_Flash_ReadBytes(flash_y1, Sys_Addr_DispY1, sizeof(int));
-
-	bool already_target = (flash_x0[0] == 50 && flash_x0[1] == 0 && flash_x0[2] == 0 && flash_x0[3] == 0)
-			&& (flash_y0[0] == 50 && flash_y0[1] == 0 && flash_y0[2] == 0 && flash_y0[3] == 0)
-			&& (flash_x1[0] == 100 && flash_x1[1] == 0 && flash_x1[2] == 0 && flash_x1[3] == 0)
-			&& (flash_y1[0] == 100 && flash_y1[1] == 0 && flash_y1[2] == 0 && flash_y1[3] == 0);
-
-	if (already_target)
+	SPI_Flash_WtritEnable();
+	HAL_Delay(5);
+	SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
+	HAL_Delay(5);
+	SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
+	while(temp1[0] != temp2[0])
 	{
-		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY OK!");
-	}
-	else
-	{
-		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Rewrite");
+		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test Err..");
 
-		uint32_t sec_x0 = Sys_Addr_DispX0 / 4096;
-		uint32_t sec_y0 = Sys_Addr_DispY0 / 4096;
-		uint32_t sec_x1 = Sys_Addr_DispX1 / 4096;
-		uint32_t sec_y1 = Sys_Addr_DispY1 / 4096;
-
-		SPI_Flash_EraseSector(sec_x0);
-		if (sec_y0 != sec_x0) SPI_Flash_EraseSector(sec_y0);
-		if (sec_x1 != sec_x0 && sec_x1 != sec_y0) SPI_Flash_EraseSector(sec_x1);
-		if (sec_y1 != sec_x0 && sec_y1 != sec_y0 && sec_y1 != sec_x1) SPI_Flash_EraseSector(sec_y1);
-
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(target_x0, Sys_Addr_DispX0, sizeof(int));
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(target_y0, Sys_Addr_DispY0, sizeof(int));
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(target_x1, Sys_Addr_DispX1, sizeof(int));
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(target_y1, Sys_Addr_DispY1, sizeof(int));
+		SPI_Stop(Flash_SPI);
 		HAL_Delay(5);
 
-		SPI_Flash_ReadBytes(flash_x0, Sys_Addr_DispX0, sizeof(int));
-		SPI_Flash_ReadBytes(flash_y0, Sys_Addr_DispY0, sizeof(int));
-		SPI_Flash_ReadBytes(flash_x1, Sys_Addr_DispX1, sizeof(int));
-		SPI_Flash_ReadBytes(flash_y1, Sys_Addr_DispY1, sizeof(int));
+		SPI_Flash_Start(Flash_SPI);
+		HAL_Delay(5);
 
-		if ((flash_x0[0] == 50 && flash_x0[1] == 0 && flash_x0[2] == 0 && flash_x0[3] == 0)
-				&& (flash_y0[0] == 50 && flash_y0[1] == 0 && flash_y0[2] == 0 && flash_y0[3] == 0)
-				&& (flash_x1[0] == 100 && flash_x1[1] == 0 && flash_x1[2] == 0 && flash_x1[3] == 0)
-				&& (flash_y1[0] == 100 && flash_y1[1] == 0 && flash_y1[2] == 0 && flash_y1[3] == 0))
-		{
-			OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY OK!");
-		}
-		else
-		{
-			OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Err!");
-		}
+		SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
+		HAL_Delay(5);
+		SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
+
+		itoa(temp1[0],str1,16);
+		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 2, str1);
+		itoa(temp1[1],str1,16);
+		OLED_ShowString(OLED_I2C_ch ,OLED_type,4, 2, str1);
+		itoa(temp2[0],str1,16);
+		OLED_ShowString(OLED_I2C_ch ,OLED_type,8, 2, str1);
+		itoa(temp2[1],str1,16);
+		OLED_ShowString(OLED_I2C_ch ,OLED_type,12, 2, str1);
 	}
 
+	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test OK!");
 	HAL_Delay(1000);
 
 	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "UniqID:");
