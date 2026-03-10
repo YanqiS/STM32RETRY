@@ -797,7 +797,6 @@ int main(void)
 	uint8_t target_y0[4] = {50, 0, 0, 0};
 	uint8_t target_x1[4] = {100, 0, 0, 0};
 	uint8_t target_y1[4] = {100, 0, 0, 0};
-	uint8_t clear_ff[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
 	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Check");
 	SPI_Flash_Start(Flash_SPI);
@@ -821,18 +820,15 @@ int main(void)
 	{
 		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash XY Rewrite");
 
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispX0, sizeof(int));
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispY0, sizeof(int));
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispX1, sizeof(int));
-		SPI_Flash_WtritEnable();
-		HAL_Delay(5);
-		SPI_Flash_WriteSomeBytes(clear_ff, Sys_Addr_DispY1, sizeof(int));
+		uint32_t sec_x0 = Sys_Addr_DispX0 / 4096;
+		uint32_t sec_y0 = Sys_Addr_DispY0 / 4096;
+		uint32_t sec_x1 = Sys_Addr_DispX1 / 4096;
+		uint32_t sec_y1 = Sys_Addr_DispY1 / 4096;
+
+		SPI_Flash_EraseSector(sec_x0);
+		if (sec_y0 != sec_x0) SPI_Flash_EraseSector(sec_y0);
+		if (sec_x1 != sec_x0 && sec_x1 != sec_y0) SPI_Flash_EraseSector(sec_x1);
+		if (sec_y1 != sec_x0 && sec_y1 != sec_y0 && sec_y1 != sec_x1) SPI_Flash_EraseSector(sec_y1);
 
 		SPI_Flash_WtritEnable();
 		HAL_Delay(5);
