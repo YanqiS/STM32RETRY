@@ -4885,7 +4885,8 @@ void SPI_Flash_Start(SPI_HandleTypeDef *hspi) {
 
 	MX_SPI1_Init();
 
-	HAL_GPIO_WritePin(SPI_Flash_NSS_GPIO_Port, SPI_Flash_NSS_Pin, 0);
+	// Flash CS idle should stay high; each flash command function toggles CS itself.
+	HAL_GPIO_WritePin(SPI_Flash_NSS_GPIO_Port, SPI_Flash_NSS_Pin, 1);
 	HAL_GPIO_WritePin(SPI_TFT_NSS_GPIO_Port, SPI_TFT_NSS_Pin, 1);
 }
 
