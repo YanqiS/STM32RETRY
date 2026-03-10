@@ -792,8 +792,7 @@ int main(void)
 
 
 
-	uint8_t temp1[4],temp2[4];
-	temp1[0] = 123;
+	uint8_t temp1[4] = {123, 0x5A, 0xA5, 0x3C},temp2[4] = {0};
 	OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test");
 
 	SPI_Flash_Start(Flash_SPI);
@@ -804,7 +803,8 @@ int main(void)
 	SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
 	HAL_Delay(5);
 	SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
-	while(temp1[0] != temp2[0])
+	while ((temp1[0] != temp2[0]) || (temp1[1] != temp2[1]) ||
+			(temp1[2] != temp2[2]) || (temp1[3] != temp2[3]))
 	{
 		OLED_ShowString(OLED_I2C_ch ,OLED_type,0, 1, "Flash Test Err..");
 
