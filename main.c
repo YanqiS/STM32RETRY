@@ -757,8 +757,9 @@ int main(void) {
 
 //	  HAL_Delay(500);
 
-	uint8_t temp1[4], temp2[4];
-	temp1[0] = 123;
+	uint8_t temp_wr[16], temp_rd[16];
+	uint32_t flash_test_addrs[5] = { Sys_Addr_DispTest, Sys_Addr_DispX0,
+			Sys_Addr_DispX1, Sys_Addr_DispY0, Sys_Addr_DispY1 };
 	OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test");
 //	while( HAL_GPIO_ReadPin(ESP_TRG_STM_GPIO_Port,ESP_TRG_STM_Pin) )
 //	{
@@ -774,35 +775,55 @@ int main(void) {
 	SPI_Flash_Start(Flash_SPI);
 	HAL_Delay(5);
 
-	SPI_Flash_WtritEnable();
-	HAL_Delay(5);
-	SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
-	HAL_Delay(5);
-	SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
-	while (temp1[0] != temp2[0]) {
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test Err..");
+	bool flash_test_failed = false;
+	for (int case_idx = 0; case_idx < 5; case_idx++) {
+		bool match_ok = false;
 
-		SPI_Stop(Flash_SPI);
-		HAL_Delay(5);
+		for (int i = 0; i < 16; i++) {
+			temp_wr[i] = (uint8_t) (((flash_test_addrs[case_idx] >> ((i % 4) * 8))
+					& 0xff) ^ (0x5A + i * 11 + case_idx));
+		}
 
-		SPI_Flash_Start(Flash_SPI);
-		HAL_Delay(5);
+		for (int retry = 0; retry < 5; retry++) {
+			SPI_Flash_WtritEnable();
+			HAL_Delay(2);
+			SPI_Flash_WriteSomeBytes(temp_wr, flash_test_addrs[case_idx], 16);
+			SPI_Flash_WaitNoBusy();
+			HAL_Delay(1);
 
-		SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
-		HAL_Delay(5);
-		SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
+			memset(temp_rd, 0, sizeof(temp_rd));
+			SPI_Flash_ReadBytes(temp_rd, flash_test_addrs[case_idx], 16);
 
-		itoa(temp1[0], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 2, str1);
-		itoa(temp1[1], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 4, 2, str1);
-		itoa(temp2[0], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 8, 2, str1);
-		itoa(temp2[1], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 12, 2, str1);
+			match_ok = true;
+			for (int i = 0; i < 16; i++) {
+				if (temp_wr[i] != temp_rd[i]) {
+					match_ok = false;
+					break;
+				}
+			}
+
+			if (match_ok) {
+				break;
+			}
+
+			SPI_Stop(Flash_SPI);
+			HAL_Delay(3);
+			SPI_Flash_Start(Flash_SPI);
+			HAL_Delay(3);
+		}
+
+		if (!match_ok) {
+			OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test Err..");
+			itoa(flash_test_addrs[case_idx], str1, 16);
+			OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 2, str1);
+			flash_test_failed = true;
+			break;
+		}
 	}
 
-	OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test OK!");
+	if (!flash_test_failed) {
+		OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test OK!");
+	}
 	HAL_Delay(1000);
 
 	OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "UniqID:");
