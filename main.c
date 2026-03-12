@@ -757,8 +757,9 @@ int main(void) {
 
 //	  HAL_Delay(500);
 
-	uint8_t temp1[4], temp2[4];
-	temp1[0] = 123;
+	uint8_t temp_wr[16], temp_rd[16];
+	uint32_t flash_test_addrs[5] = { Sys_Addr_DispTest, Sys_Addr_DispX0,
+			Sys_Addr_DispX1, Sys_Addr_DispY0, Sys_Addr_DispY1 };
 	OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test");
 //	while( HAL_GPIO_ReadPin(ESP_TRG_STM_GPIO_Port,ESP_TRG_STM_Pin) )
 //	{
@@ -774,35 +775,55 @@ int main(void) {
 	SPI_Flash_Start(Flash_SPI);
 	HAL_Delay(5);
 
-	SPI_Flash_WtritEnable();
-	HAL_Delay(5);
-	SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
-	HAL_Delay(5);
-	SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
-	while (temp1[0] != temp2[0]) {
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test Err..");
+	bool flash_test_failed = false;
+	for (int case_idx = 0; case_idx < 5; case_idx++) {
+		bool match_ok = false;
 
-		SPI_Stop(Flash_SPI);
-		HAL_Delay(5);
+		for (int i = 0; i < 16; i++) {
+			temp_wr[i] = (uint8_t) (((flash_test_addrs[case_idx] >> ((i % 4) * 8))
+					& 0xff) ^ (0x5A + i * 11 + case_idx));
+		}
 
-		SPI_Flash_Start(Flash_SPI);
-		HAL_Delay(5);
+		for (int retry = 0; retry < 5; retry++) {
+			SPI_Flash_WtritEnable();
+			HAL_Delay(2);
+			SPI_Flash_WriteSomeBytes(temp_wr, flash_test_addrs[case_idx], 16);
+			SPI_Flash_WaitNoBusy();
+			HAL_Delay(1);
 
-		SPI_Flash_WriteSomeBytes(temp1, Sys_Addr_DispTest, sizeof(int));
-		HAL_Delay(5);
-		SPI_Flash_ReadBytes(temp2, Sys_Addr_DispTest, sizeof(int));
+			memset(temp_rd, 0, sizeof(temp_rd));
+			SPI_Flash_ReadBytes(temp_rd, flash_test_addrs[case_idx], 16);
 
-		itoa(temp1[0], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 2, str1);
-		itoa(temp1[1], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 4, 2, str1);
-		itoa(temp2[0], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 8, 2, str1);
-		itoa(temp2[1], str1, 16);
-		OLED_ShowString(OLED_I2C_ch, OLED_type, 12, 2, str1);
+			match_ok = true;
+			for (int i = 0; i < 16; i++) {
+				if (temp_wr[i] != temp_rd[i]) {
+					match_ok = false;
+					break;
+				}
+			}
+
+			if (match_ok) {
+				break;
+			}
+
+			SPI_Stop(Flash_SPI);
+			HAL_Delay(3);
+			SPI_Flash_Start(Flash_SPI);
+			HAL_Delay(3);
+		}
+
+		if (!match_ok) {
+			OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test Err..");
+			itoa(flash_test_addrs[case_idx], str1, 16);
+			OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 2, str1);
+			flash_test_failed = true;
+			break;
+		}
 	}
 
-	OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test OK!");
+	if (!flash_test_failed) {
+		OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "Flash Test OK!");
+	}
 	HAL_Delay(1000);
 
 	OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1, "UniqID:");
@@ -3396,7 +3417,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 									+ (buf_rec[4] << 8) + (buf_rec[5] << 16)
 									+ (buf_rec[6] << 24)) / 160;
 
-							TA531_RC1.TA531_RC_X_act = MotorCtrl_M1.M_Position
+							TA531_RC1.TA531_RC_X_act = -MotorCtrl_M1.M_Position
 									- 10;
 						}
 
@@ -3444,7 +3465,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 									+ (buf_rec[4] << 8) + (buf_rec[5] << 16)
 									+ (buf_rec[6] << 24)) / 160;
 
-							TA531_RC1.TA531_RC_Y_act = MotorCtrl_M3.M_Position
+							TA531_RC1.TA531_RC_Y_act = -MotorCtrl_M3.M_Position
 									- 10;
 						}
 
@@ -4191,14 +4212,16 @@ void MoC_Init() {
 				SPI_Flash_Start(Flash_SPI);
 				SPI_Flash_WtritEnable();
 				HAL_Delay(5);
-				SPI_Flash_WriteSomeBytes(ScreenSz_1.DispX0, Sys_Addr_DispX0,
-						sizeof(int));
-				HAL_Delay(5);
+					SPI_Flash_WriteSomeBytes(ScreenSz_1.DispX0, Sys_Addr_DispX0,
+							sizeof(int));
+					SPI_Flash_WaitNoBusy();
+					HAL_Delay(1);
 				SPI_Flash_WtritEnable();
 				HAL_Delay(5);
-				SPI_Flash_WriteSomeBytes(ScreenSz_1.DispY0, Sys_Addr_DispY0,
-						sizeof(int));
-				HAL_Delay(5);
+					SPI_Flash_WriteSomeBytes(ScreenSz_1.DispY0, Sys_Addr_DispY0,
+							sizeof(int));
+					SPI_Flash_WaitNoBusy();
+					HAL_Delay(1);
 				uint8_t temp1[4];	//temp3,temp4;
 				SPI_Flash_ReadBytes(temp1, Sys_Addr_DispX0, sizeof(int));
 
@@ -4345,14 +4368,16 @@ void MoC_Init() {
 				HAL_Delay(1);
 				SPI_Flash_WtritEnable();
 				HAL_Delay(5);
-				SPI_Flash_WriteSomeBytes(ScreenSz_1.DispX1, Sys_Addr_DispX1,
-						sizeof(int));
-				HAL_Delay(1);
+					SPI_Flash_WriteSomeBytes(ScreenSz_1.DispX1, Sys_Addr_DispX1,
+							sizeof(int));
+					SPI_Flash_WaitNoBusy();
+					HAL_Delay(1);
 				SPI_Flash_WtritEnable();
 				HAL_Delay(5);
-				SPI_Flash_WriteSomeBytes(ScreenSz_1.DispY1, Sys_Addr_DispY1,
-						sizeof(int));
-				HAL_Delay(1);
+					SPI_Flash_WriteSomeBytes(ScreenSz_1.DispY1, Sys_Addr_DispY1,
+							sizeof(int));
+					SPI_Flash_WaitNoBusy();
+					HAL_Delay(1);
 
 				SPI_Flash_ReadBytes(temp1, Sys_Addr_DispX1, sizeof(int));
 				if ((temp1[0] != ScreenSz_1.DispX1[0])
@@ -4400,26 +4425,6 @@ void MoC_Init() {
 							"WriteFlash OK!");
 				}
 
-				SPI_Flash_ReadBytes(temp1, Sys_Addr_DispY1, sizeof(int));
-				if ((temp1[0] != ScreenSz_1.DispY1[0])
-						| (temp1[1] != ScreenSz_1.DispY1[1])
-						| (temp1[2] != ScreenSz_1.DispY1[2])
-						| (temp1[3] != ScreenSz_1.DispY1[3])) {
-					OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1,
-							"WriteFlash Err!");
-					while ((temp1[0] != ScreenSz_1.DispY1[0])
-							| (temp1[1] != ScreenSz_1.DispY1[1])
-							| (temp1[2] != ScreenSz_1.DispY1[2])
-							| (temp1[3] != ScreenSz_1.DispY1[3])) {
-						SPI_Flash_WriteSomeBytes(ScreenSz_1.DispY1,
-						Sys_Addr_DispY1, sizeof(int));
-						HAL_Delay(1);
-						SPI_Flash_ReadBytes(temp1, Sys_Addr_DispY1,
-								sizeof(int));
-					}
-					OLED_ShowString(OLED_I2C_ch, OLED_type, 0, 1,
-							"WriteFlash OK!");
-				}
 
 				////push down
 
@@ -4901,7 +4906,8 @@ void SPI_Flash_Start(SPI_HandleTypeDef *hspi) {
 
 	MX_SPI1_Init();
 
-	HAL_GPIO_WritePin(SPI_Flash_NSS_GPIO_Port, SPI_Flash_NSS_Pin, 0);
+	// Flash CS idle should stay high; each flash command function toggles CS itself.
+	HAL_GPIO_WritePin(SPI_Flash_NSS_GPIO_Port, SPI_Flash_NSS_Pin, 1);
 	HAL_GPIO_WritePin(SPI_TFT_NSS_GPIO_Port, SPI_TFT_NSS_Pin, 1);
 }
 

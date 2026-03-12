@@ -605,7 +605,7 @@ void SPI_Flash_WtritDisable(void)
 
 uint8_t SPI_Flash_ReadSR(void)
 {
-	uint8_t pdata;
+	uint8_t pdata = 0;
 	uint8_t RxData,cmd;
 
 	HAL_GPIO_WritePin(SPI_Flash_NSS_Group, SPI_Flash_NSS_Pin, 0);
